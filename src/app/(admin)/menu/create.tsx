@@ -1,9 +1,10 @@
 import { View, Text, StyleSheet, Image, TextInput, ScrollView, Alert } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Colors from '../../../../constants/Colors';
 import Button from '../../../../components/button';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useDeleteProduct, useInsertProduct, useProductListByID, useUpdateProduct } from '../../api/products';
 
 const defaultPizzaImage = 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/food/peperoni.png'
 
@@ -12,10 +13,21 @@ const CreateScreen = () => {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [errors, setErrors] = useState('');
-  const {id} = useLocalSearchParams()
+  const {id:idString} = useLocalSearchParams()
+  const id = parseFloat(typeof idString === 'string'? idString: idString[0])
+  const {data: updatingProduct} = useProductListByID(id);
   const router = useRouter();
+  const {mutate: insertProduct} = useInsertProduct();
+  const {mutate: updatedProduct} = useUpdateProduct();
+  const {mutate: deleteProduct} = useDeleteProduct();
   const isUpdating = !!id
-
+  useEffect(()=>{
+    if(updatingProduct){
+      setName(updatingProduct.name)
+      setPrice(updatingProduct.price.toString())
+      setImage(updatingProduct.image)
+    }
+  },[updatingProduct])
   const validateInput = () => {
     setErrors('');
     if (!name) {
@@ -41,24 +53,40 @@ const CreateScreen = () => {
     onCreate()
   }
 }
-  const onCreate = () => {
-    if (!validateInput()) {
-      return;
-    }
-
-    console.warn('Creating dish');
+  function resetProuduct(){
     setName('');
     setPrice('');
     setImage('');
     router.back();
+  }
+  const onCreate = () => {
+    if (!validateInput()) {
+      return;
+    }
+    console.log('creating product')
+    insertProduct({name, price:parseFloat(price), image}, {onSuccess:()=>{
+      resetProuduct()
+      router.back();
+    }})
+
+
   };
   const onUpdateCreate = () =>{
     if(!validateInput()){
 
     }
+
+    updatedProduct(
+      {id,name, price:parseFloat(price), image}
+    )
+    resetProuduct()
   }
   const onDelete = ()=>{
-    console.warn('Delete')
+    deleteProduct(id, {onSuccess:()=>{
+      resetProuduct();
+      router.replace('/(admin)')
+
+    }})
     
   }
   const confirmDelete = () =>{

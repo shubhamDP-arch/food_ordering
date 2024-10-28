@@ -6,7 +6,8 @@ import { useState } from 'react';
 import Button from '@/components/button';
 import { useCart } from '../../providers/CartProvider';
 import { PizzaSize } from '../../types';
-
+import { ActivityIndicator } from 'react-native';
+import { useProductListByID } from '../../api/products';
 
 
 const sizes: PizzaSize[]= ['S','M', 'L', 'XL']
@@ -14,13 +15,26 @@ const sizes: PizzaSize[]= ['S','M', 'L', 'XL']
 
 
 export default function MenuScreen() {
-  const {id} = useLocalSearchParams()
+
+  const {id:IdString} = useLocalSearchParams()
+  const id = parseFloat(typeof IdString === 'string' ? IdString : IdString[0]);
   const {addItem} = useCart()
   const router = useRouter()
-  const product = products.find(p => p.id.toString() === id)
+  
   const [selectedSize, setSelectedSize] = useState<PizzaSize>('M')
 
+  const {
+    data: product,
+    isLoading,
+    error,
+  } = useProductListByID(id);
   
+  if (isLoading) {
+    return <ActivityIndicator />;
+  }
+  if (error || !product) {
+    return <Text>Failed to fetch product</Text>;
+  }
   const addToCart = () =>{
     if(!product){
       return;

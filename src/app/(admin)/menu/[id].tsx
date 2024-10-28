@@ -9,6 +9,7 @@ import { useCart } from '../../providers/CartProvider';
 import { PizzaSize } from '../../types';
 import { Link } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
+import { useProductListByID } from '../../api/products';
 
 
 const sizes: PizzaSize[]= ['S','M', 'L', 'XL']
@@ -16,13 +17,18 @@ const sizes: PizzaSize[]= ['S','M', 'L', 'XL']
 
 
 export default function MenuScreen() {
-  const {id} = useLocalSearchParams()
+  const {id: IdString} = useLocalSearchParams()
   const {addItem} = useCart()
   const router = useRouter()
-  const product = products.find(p => p.id.toString() === id)
+  const id = parseFloat(typeof IdString === 'string' ? IdString : IdString[0]);
   const [selectedSize, setSelectedSize] = useState<PizzaSize>('M')
 
   
+  const {
+    data: product,
+    isLoading,
+    error,
+  } = useProductListByID(id);
   const addToCart = () =>{
     if(!product){
       return;
@@ -37,7 +43,7 @@ export default function MenuScreen() {
   return(
     <ScrollView>
     <View style={styles.container}>
-    <Stack.Screen name="[id]" options={{title:'Menu', headerRight: () =>  (
+    <Stack.Screen options={{title:'Menu', headerRight: () =>  (
         <Link href="/(admin)/menu/create/?id=${id}" asChild>
               <Pressable>
                 {({ pressed }) => (
